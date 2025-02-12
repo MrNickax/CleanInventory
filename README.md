@@ -1,1 +1,1 @@
-# AutoDiscard
+# CleanInventory
