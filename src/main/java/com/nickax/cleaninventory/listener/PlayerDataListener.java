@@ -21,12 +21,12 @@ public class PlayerDataListener extends SwitchableListener {
     @EventHandler
     private void onPlayerLogin(PlayerLoginEvent event) {
         Player player = event.getPlayer();
-        playerDataRepository.loadFromStorageToCache(player.getUniqueId(), new PlayerData(player));
+        playerDataRepository.loadFromDatabaseToCache(player.getUniqueId(), new PlayerData(player));
     }
 
     @EventHandler
     private void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        playerDataRepository.saveFromCacheToStorage(player.getUniqueId());
+        playerDataRepository.saveFromCacheToDatabase(player.getUniqueId());
     }
 }

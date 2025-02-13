@@ -15,7 +15,7 @@ public class MenuCommand extends BaseCommand {
     private final CleanInventory plugin;
 
     public MenuCommand(CleanInventory plugin, BaseCommand parent) {
-        super("menu", createProperties(parent));
+        super("menu", createProperties(parent), parent.getMessages());
         this.plugin = plugin;
     }
 

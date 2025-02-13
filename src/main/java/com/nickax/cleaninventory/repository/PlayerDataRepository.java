@@ -9,11 +9,11 @@ import java.util.UUID;
 
 public class PlayerDataRepository extends DualRepository<UUID, PlayerData> {
 
-    public PlayerDataRepository(Repository<UUID, PlayerData> cache, Repository<UUID, PlayerData> storage) {
-        super(cache, storage);
+    public PlayerDataRepository(Repository<UUID, PlayerData> cache, Repository<UUID, PlayerData> database) {
+        super(cache, database);
     }
 
-    public void loadFromStorageToCache(UUID key, PlayerData defaultPlayerData) {
+    public void loadFromDatabaseToCache(UUID key, PlayerData defaultPlayerData) {
         PlayerData playerData = get(key, TargetRepository.TWO);
         put(
                 key,
@@ -24,7 +24,7 @@ public class PlayerDataRepository extends DualRepository<UUID, PlayerData> {
         );
     }
 
-    public void saveFromCacheToStorage(UUID key) {
+    public void saveFromCacheToDatabase(UUID key) {
         PlayerData playerData = get(key, TargetRepository.ONE);
         if (playerData != null) {
             put(key, playerData, TargetRepository.TWO);

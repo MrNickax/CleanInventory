@@ -5,23 +5,31 @@ import com.nickax.cleaninventory.config.MainConfig;
 import com.nickax.cleaninventory.data.PlayerData;
 import com.nickax.cleaninventory.data.PlayerDataSaveTask;
 import com.nickax.cleaninventory.listener.InventoryListener;
+import com.nickax.cleaninventory.listener.LanguageListener;
 import com.nickax.cleaninventory.listener.ListenerRegistry;
 import com.nickax.cleaninventory.listener.PlayerDataListener;
 import com.nickax.cleaninventory.listener.pickup.StandardPickupListener;
 import com.nickax.cleaninventory.repository.PlayerDataRepository;
-import com.nickax.cleaninventory.storage.StorageLoader;
 import com.nickax.genten.command.CommandRegistry;
+import com.nickax.genten.language.Language;
+import com.nickax.genten.language.LanguageAccessor;
+import com.nickax.genten.language.LanguageLoader;
 import com.nickax.genten.library.Libraries;
 import com.nickax.genten.library.LibraryLoader;
 import com.nickax.genten.plugin.PluginUpdater;
+import com.nickax.genten.repository.JsonRepository;
 import com.nickax.genten.repository.LocalRepository;
 import com.nickax.genten.repository.Repository;
+import com.nickax.genten.repository.database.DatabaseLoader;
+import com.nickax.genten.repository.dual.TargetRepository;
 import com.nickax.genten.spigot.SpigotVersion;
 import fr.minuskube.inv.InventoryManager;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.util.List;
 import java.util.UUID;
 
 public final class CleanInventory extends JavaPlugin {
@@ -30,6 +38,7 @@ public final class CleanInventory extends JavaPlugin {
     private final MainConfig mainConfig = new MainConfig(this);
     private PlayerDataRepository playerDataRepository;
     private PlayerDataSaveTask playerDataSaveTask;
+    private LanguageAccessor languageAccessor;
     private final PluginUpdater pluginUpdater = new PluginUpdater(getLogger());
 
     @Override
@@ -43,6 +52,7 @@ public final class CleanInventory extends JavaPlugin {
         SpigotVersion.checkCompatibility(getLogger());
         initMainConfig();
         loadPlayerData();
+        loadLanguages();
         loadInventoryManager();
         loadListeners();
         loadCommands();
@@ -63,6 +73,7 @@ public final class CleanInventory extends JavaPlugin {
         playerDataSaveTask.cancel();
         savePlayerData();
         loadPlayerData();
+        loadLanguages();
         loadListeners();
         CommandRegistry.unregisterAll();
         loadCommands();
@@ -74,6 +85,10 @@ public final class CleanInventory extends JavaPlugin {
 
     public PlayerDataRepository getPlayerDataRepository() {
         return playerDataRepository;
+    }
+
+    public LanguageAccessor getLanguageAccessor() {
+        return languageAccessor;
     }
 
     public InventoryManager getInventoryManager() {
@@ -94,13 +109,14 @@ public final class CleanInventory extends JavaPlugin {
     }
 
     private void loadPlayerDataRepository() {
-        Repository<UUID, PlayerData> storage = StorageLoader.load(this, mainConfig);
-        playerDataRepository = new PlayerDataRepository(new LocalRepository<>(), storage);
+        Repository<UUID, PlayerData> defaultDatabase = new JsonRepository<>(new File(getDataFolder(), "data/player"), PlayerData.class);
+        Repository<UUID, PlayerData> database = DatabaseLoader.load(mainConfig, PlayerData.class, defaultDatabase);
+        playerDataRepository = new PlayerDataRepository(new LocalRepository<>(), database);
     }
 
     private void loadPlayerDataForOnlinePlayers() {
         Bukkit.getOnlinePlayers().forEach(player ->
-                playerDataRepository.loadFromStorageToCache(player.getUniqueId(), new PlayerData(player)));
+                playerDataRepository.loadFromDatabaseToCache(player.getUniqueId(), new PlayerData(player)));
     }
 
     private void startPlayerDataSaveTask() {
@@ -109,6 +125,21 @@ public final class CleanInventory extends JavaPlugin {
             int interval = mainConfig.getDataAutoSaveInterval() * 60 * 20;
             playerDataSaveTask.runTaskTimer(this, interval, interval);
         }
+    }
+
+    private void loadLanguages() {
+        LanguageLoader languageLoader = new LanguageLoader(this);
+        List<Language> languages = languageLoader.load(mainConfig.getEnabledLanguages());
+        Language defaultLanguage = getDefaultLanguage(languages);
+        languageAccessor = new LanguageAccessor(languages, defaultLanguage, playerDataRepository.get(TargetRepository.ONE));
+        ListenerRegistry.add(new LanguageListener(this));
+    }
+
+    private Language getDefaultLanguage(List<Language> languages) {
+        return languages.stream()
+                .filter(language -> language.getId().equalsIgnoreCase(mainConfig.getDefaultLanguage()))
+                .findFirst()
+                .orElse(null);
     }
 
     private void loadInventoryManager() {
@@ -128,7 +159,7 @@ public final class CleanInventory extends JavaPlugin {
     }
 
     private void loadMetrics() {
-        new Metrics(this, 24689);
+        new Metrics(this, 24770);
     }
 
     private void checkForUpdates() {
@@ -155,10 +186,10 @@ public final class CleanInventory extends JavaPlugin {
 
     private void notifyUserAboutManualUpdate() {
         getLogger().info("Automatic updates are disabled. Visit the following link to download the update:");
-        getLogger().info("https://www.spigotmc.org/resources/93135");
+        getLogger().info("https://www.spigotmc.org/resources/122572");
     }
 
     private void savePlayerData() {
-        Bukkit.getOnlinePlayers().forEach(player -> playerDataRepository.saveFromCacheToStorage(player.getUniqueId()));
+        Bukkit.getOnlinePlayers().forEach(player -> playerDataRepository.saveFromCacheToDatabase(player.getUniqueId()));
     }
 }

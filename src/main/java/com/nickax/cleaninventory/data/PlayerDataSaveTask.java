@@ -14,6 +14,6 @@ public class PlayerDataSaveTask extends BukkitRunnable {
 
     @Override
     public void run() {
-        Bukkit.getOnlinePlayers().forEach(player -> playerDataRepository.saveFromCacheToStorage(player.getUniqueId()));
+        Bukkit.getOnlinePlayers().forEach(player -> playerDataRepository.saveFromCacheToDatabase(player.getUniqueId()));
     }
 }

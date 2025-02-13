@@ -4,6 +4,7 @@ import com.nickax.cleaninventory.CleanInventory;
 import com.nickax.genten.command.BaseCommand;
 import com.nickax.genten.command.CommandHelp;
 import com.nickax.genten.command.CommandProperties;
+import com.nickax.genten.command.messages.MultiLanguageCommandMessages;
 import org.bukkit.command.CommandSender;
 
 import java.util.List;
@@ -11,9 +12,10 @@ import java.util.List;
 public class CleanInventoryCommand extends BaseCommand {
 
     public CleanInventoryCommand(CleanInventory plugin) {
-        super("cleaninventory", createProperties());
+        super("cleaninventory", createProperties(), MultiLanguageCommandMessages.DEFAULT(plugin.getLanguageAccessor()));
         addSubCommand(new ReloadCommand(plugin, this));
         addSubCommand(new MenuCommand(plugin, this));
+        addSubCommand(new LanguageCommand(plugin, this));
     }
 
     @Override

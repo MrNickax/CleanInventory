@@ -3,6 +3,15 @@
 # Enable or disable automatic updates.
 auto-update: true
 
+language:
+  # The default server language.
+  default: en_US
+
+  # The list of enabled languages.
+  enabled:
+    - en_US
+    - es_ES
+
 storage:
   # Choose your database system: "JSON", "MYSQL", "MONGODB".
   type: JSON
