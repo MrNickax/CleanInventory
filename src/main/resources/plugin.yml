@@ -1,0 +1,4 @@
+name: CleanInventory
+version: '${project.version}'
+main: com.nickax.cleaninventory.CleanInventory
+api-version: '1.13'
