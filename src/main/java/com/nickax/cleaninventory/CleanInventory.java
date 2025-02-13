@@ -4,13 +4,22 @@ import com.nickax.cleaninventory.command.CleanInventoryCommand;
 import com.nickax.cleaninventory.config.MainConfig;
 import com.nickax.cleaninventory.data.PlayerData;
 import com.nickax.cleaninventory.data.PlayerDataSaveTask;
-import com.nickax.cleaninventory.listener.InventoryListener;
+import com.nickax.cleaninventory.item.Item;
+import com.nickax.cleaninventory.listener.Test;
 import com.nickax.cleaninventory.listener.LanguageListener;
 import com.nickax.cleaninventory.listener.ListenerRegistry;
 import com.nickax.cleaninventory.listener.PlayerDataListener;
 import com.nickax.cleaninventory.listener.pickup.StandardPickupListener;
 import com.nickax.cleaninventory.repository.PlayerDataRepository;
 import com.nickax.genten.command.CommandRegistry;
+import com.nickax.genten.config.Config;
+import com.nickax.genten.inventory.BaseInventory;
+import com.nickax.genten.inventory.InventoryListener;
+import com.nickax.genten.inventory.InventoryLoader;
+import com.nickax.genten.inventory.item.ClickableItem;
+import com.nickax.genten.inventory.item.SingleLanguageClickableItem;
+import com.nickax.genten.inventory.update.InventoryUpdateTask;
+import com.nickax.genten.item.ItemStackBuilder;
 import com.nickax.genten.language.Language;
 import com.nickax.genten.language.LanguageAccessor;
 import com.nickax.genten.language.LanguageLoader;
@@ -23,22 +32,23 @@ import com.nickax.genten.repository.Repository;
 import com.nickax.genten.repository.database.DatabaseLoader;
 import com.nickax.genten.repository.dual.TargetRepository;
 import com.nickax.genten.spigot.SpigotVersion;
-import fr.minuskube.inv.InventoryManager;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 public final class CleanInventory extends JavaPlugin {
 
-    private InventoryManager inventoryManager;
     private final MainConfig mainConfig = new MainConfig(this);
     private PlayerDataRepository playerDataRepository;
     private PlayerDataSaveTask playerDataSaveTask;
     private LanguageAccessor languageAccessor;
+    private BaseInventory itemBlacklistInventory;
     private final PluginUpdater pluginUpdater = new PluginUpdater(getLogger());
 
     @Override
@@ -53,10 +63,9 @@ public final class CleanInventory extends JavaPlugin {
         initMainConfig();
         loadPlayerData();
         loadLanguages();
-        loadInventoryManager();
+        loadInventories();
         loadListeners();
         loadCommands();
-        loadMetrics();
         checkForUpdates();
     }
 
@@ -74,6 +83,7 @@ public final class CleanInventory extends JavaPlugin {
         savePlayerData();
         loadPlayerData();
         loadLanguages();
+        loadInventories();
         loadListeners();
         CommandRegistry.unregisterAll();
         loadCommands();
@@ -91,8 +101,8 @@ public final class CleanInventory extends JavaPlugin {
         return languageAccessor;
     }
 
-    public InventoryManager getInventoryManager() {
-        return inventoryManager;
+    public BaseInventory getItemBlacklistInventory() {
+        return itemBlacklistInventory;
     }
 
     private void initMainConfig() {
@@ -142,10 +152,40 @@ public final class CleanInventory extends JavaPlugin {
                 .orElse(null);
     }
 
-    private void loadInventoryManager() {
-        inventoryManager = new InventoryManager(this);
-        inventoryManager.init();
+    private void loadInventories() {
+        Config itemBlacklistConfig = loadItemBlacklistConfig();
+        InventoryLoader inventoryLoader = new InventoryLoader(languageAccessor);
+        itemBlacklistInventory = inventoryLoader.load(itemBlacklistConfig);
+
+        itemBlacklistInventory.setOnUpdate((player, inventory) -> {
+            PlayerData playerData = playerDataRepository.get(player.getUniqueId(), TargetRepository.ONE);
+
+            List<ClickableItem> clickableItems = new ArrayList<>();
+            for (Item item : playerData.getBlackListedItems()) {
+                ItemStack base = item.toItemStack();
+                ItemStack itemStack = new ItemStackBuilder(base).addToLore("", "&cClick to remove!").build();
+
+                String name = itemStack.getItemMeta().getDisplayName();
+                List<String> lore = itemStack.getItemMeta().getLore();
+
+                ClickableItem clickableItem = SingleLanguageClickableItem.builder(itemStack).setBlocked(true).setName(name).setLore(lore)
+                        .setOnClick(List.of(event -> playerData.removeBlackListedItem(item))).build();
+                clickableItems.add(clickableItem);
+            }
+
+            inventory.getContent().getPagination().setItems(clickableItems);
+        });
+
+        ListenerRegistry.add(new Test(this));
         ListenerRegistry.add(new InventoryListener(this));
+        new InventoryUpdateTask().runTaskTimer(this, 0L, 0L);
+    }
+
+    private Config loadItemBlacklistConfig() {
+        Config config = new Config(this, "menu/item-blacklist.yml", "menu/item-blacklist.yml");
+        config.load();
+        config.save();
+        return config;
     }
 
     private void loadListeners() {
