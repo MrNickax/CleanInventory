@@ -66,6 +66,7 @@ public final class CleanInventory extends JavaPlugin {
         loadInventories();
         loadListeners();
         loadCommands();
+        loadMetrics();
         checkForUpdates();
     }
 
@@ -169,7 +170,7 @@ public final class CleanInventory extends JavaPlugin {
                 List<String> lore = itemStack.getItemMeta().getLore();
 
                 ClickableItem clickableItem = SingleLanguageClickableItem.builder(itemStack).setBlocked(true).setName(name).setLore(lore)
-                        .setOnClick(List.of(event -> playerData.removeBlackListedItem(item))).build();
+                        .setOnClick(List.of((event, bi) -> playerData.removeBlackListedItem(item))).build();
                 clickableItems.add(clickableItem);
             }
 

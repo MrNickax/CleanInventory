@@ -1,4 +1,10 @@
-title: '&8Item Blacklist'
+titles:
+  en_US:
+    id: en_US
+    title: '&8Item Blacklist'
+  es_ES:
+    id: es_ES
+    title: '&8Lista negra de objetos'
 size: 36
 
 pagination:
@@ -87,6 +93,19 @@ content:
           - '&7En este menú, puedes gestionar'
           - '&7los objetos que están bloqueados'
           - '&7de ser recogidos.'
+  previous-page:
+    material: ARROW
+    slot: 30
+    names:
+      en_US:
+        id: en_US
+        name: '&aPrevious Page'
+      es_ES:
+        id: es_ES
+        name: '&aPágina Anterior'
+    actions:
+      close:
+        type: PREVIOUS_PAGE
   close:
     material: BARRIER
     slot: 31
@@ -100,3 +119,16 @@ content:
     actions:
       close:
         type: CLOSE
+  next-page:
+    material: ARROW
+    slot: 32
+    names:
+      en_US:
+        id: en_US
+        name: '&aNext Page'
+      es_ES:
+        id: es_ES
+        name: '&aSiguiente Página'
+    actions:
+      close:
+        type: NEXT_PAGE
