@@ -3,99 +3,79 @@ package com.nickax.cleaninventory;
 import com.nickax.cleaninventory.command.CleanInventoryCommand;
 import com.nickax.cleaninventory.config.MainConfig;
 import com.nickax.cleaninventory.data.PlayerData;
+import com.nickax.cleaninventory.data.PlayerDataRepository;
 import com.nickax.cleaninventory.data.PlayerDataSaveTask;
-import com.nickax.cleaninventory.item.Item;
-import com.nickax.cleaninventory.listener.Test;
-import com.nickax.cleaninventory.listener.LanguageListener;
-import com.nickax.cleaninventory.listener.ListenerRegistry;
+import com.nickax.cleaninventory.inventory.ItemBlacklistUpdate;
 import com.nickax.cleaninventory.listener.PlayerDataListener;
-import com.nickax.cleaninventory.listener.pickup.StandardPickupListener;
-import com.nickax.cleaninventory.repository.PlayerDataRepository;
+import com.nickax.cleaninventory.listener.InventoryListener;
+import com.nickax.cleaninventory.listener.pickup.LegacyPickupListener;
+import com.nickax.cleaninventory.listener.pickup.PickupListener;
 import com.nickax.genten.command.CommandRegistry;
-import com.nickax.genten.config.Config;
+import com.nickax.genten.config.FileConfig;
+import com.nickax.genten.credential.DatabaseCredential;
 import com.nickax.genten.inventory.BaseInventory;
-import com.nickax.genten.inventory.InventoryListener;
-import com.nickax.genten.inventory.InventoryLoader;
-import com.nickax.genten.inventory.item.ClickableItem;
-import com.nickax.genten.inventory.item.SingleLanguageClickableItem;
-import com.nickax.genten.inventory.update.InventoryUpdateTask;
-import com.nickax.genten.item.ItemStackBuilder;
+import com.nickax.genten.inventory.InventoryLogic;;
+import com.nickax.genten.inventory.loader.InventoryLoader;
 import com.nickax.genten.language.Language;
-import com.nickax.genten.language.LanguageAccessor;
-import com.nickax.genten.language.LanguageLoader;
+import com.nickax.genten.language.listener.LanguageListener;
+import com.nickax.genten.language.operation.LanguageAccessor;
+import com.nickax.genten.language.operation.LanguageLoader;
 import com.nickax.genten.library.Libraries;
 import com.nickax.genten.library.LibraryLoader;
+import com.nickax.genten.listener.ListenerRegistry;
 import com.nickax.genten.plugin.PluginUpdater;
-import com.nickax.genten.repository.JsonRepository;
-import com.nickax.genten.repository.LocalRepository;
 import com.nickax.genten.repository.Repository;
-import com.nickax.genten.repository.database.DatabaseLoader;
+import com.nickax.genten.repository.cache.LocalRepository;
 import com.nickax.genten.repository.dual.TargetRepository;
+import com.nickax.genten.repository.storage.JsonRepository;
 import com.nickax.genten.spigot.SpigotVersion;
 import org.bstats.bukkit.Metrics;
-import org.bukkit.Bukkit;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 public final class CleanInventory extends JavaPlugin {
 
+    private final LibraryLoader libraryLoader = new LibraryLoader(this);
+    private final SpigotVersion version = SpigotVersion.getCurrent();
     private final MainConfig mainConfig = new MainConfig(this);
     private PlayerDataRepository playerDataRepository;
     private PlayerDataSaveTask playerDataSaveTask;
     private LanguageAccessor languageAccessor;
+    private InventoryLogic inventoryLogic;
     private BaseInventory itemBlacklistInventory;
-    private final PluginUpdater pluginUpdater = new PluginUpdater(getLogger());
 
     @Override
     public void onLoad() {
-        LibraryLoader libraryLoader = new LibraryLoader(this);
         libraryLoader.load(Libraries.MONGO_JAVA_DRIVER.get());
     }
 
     @Override
     public void onEnable() {
         SpigotVersion.checkCompatibility(getLogger());
-        initMainConfig();
-        loadPlayerData();
-        loadLanguages();
-        loadInventories();
-        loadListeners();
-        loadCommands();
+        initializePlugin();
+        PluginUpdater.checkForUpdates(this, 122572, mainConfig.isAutoUpdateEnabled());
         loadMetrics();
-        checkForUpdates();
     }
 
     @Override
     public void onDisable() {
-        savePlayerData();
-        ListenerRegistry.unregisterAll();
-        CommandRegistry.unregisterAll();
+        shutdownPlugin();
     }
 
     public void reload() {
-        initMainConfig();
-        ListenerRegistry.unregisterAll();
-        playerDataSaveTask.cancel();
-        savePlayerData();
-        loadPlayerData();
-        loadLanguages();
-        loadInventories();
-        loadListeners();
-        CommandRegistry.unregisterAll();
-        loadCommands();
-    }
-
-    public MainConfig getMainConfig() {
-        return mainConfig;
+        shutdownPlugin();
+        initializePlugin();
     }
 
     public PlayerDataRepository getPlayerDataRepository() {
         return playerDataRepository;
+    }
+
+    public Repository<UUID, PlayerData> getPlayerDataCache() {
+        return playerDataRepository.get(TargetRepository.ONE);
     }
 
     public LanguageAccessor getLanguageAccessor() {
@@ -106,131 +86,121 @@ public final class CleanInventory extends JavaPlugin {
         return itemBlacklistInventory;
     }
 
-    private void initMainConfig() {
+    private void initializePlugin() {
+        loadMainConfig();
+        loadPlayerData();
+        loadLanguages();
+        loadInventories();
+        registerPickupListener();
+        loadCommands();
+    }
+
+    private void shutdownPlugin() {
+        playerDataSaveTask.cancel();
+        playerDataRepository.saveFromCacheToStorage();
+        inventoryLogic.disable();
+        CommandRegistry.unregisterAll();
+        ListenerRegistry.unregisterAll();
+    }
+
+    private void loadMainConfig() {
         mainConfig.load();
-        mainConfig.save();
         mainConfig.restore();
+        mainConfig.save();
     }
 
     private void loadPlayerData() {
         loadPlayerDataRepository();
-        loadPlayerDataForOnlinePlayers();
         startPlayerDataSaveTask();
-        ListenerRegistry.add(new PlayerDataListener(this));
+        ListenerRegistry.register(new PlayerDataListener(this));
     }
 
     private void loadPlayerDataRepository() {
-        Repository<UUID, PlayerData> defaultDatabase = new JsonRepository<>(new File(getDataFolder(), "data/player"), PlayerData.class);
-        Repository<UUID, PlayerData> database = DatabaseLoader.load(mainConfig, PlayerData.class, defaultDatabase);
-        playerDataRepository = new PlayerDataRepository(new LocalRepository<>(), database);
+        Repository<UUID, PlayerData> storage = loadStorage();
+        playerDataRepository = new PlayerDataRepository(new LocalRepository<>(), storage);
+        playerDataRepository.loadFromStorageToCache();
     }
 
-    private void loadPlayerDataForOnlinePlayers() {
-        Bukkit.getOnlinePlayers().forEach(player ->
-                playerDataRepository.loadFromDatabaseToCache(player.getUniqueId(), new PlayerData(player)));
+    private Repository<UUID, PlayerData> loadStorage() {
+        DatabaseCredential credential = mainConfig.getDatabaseCredential();
+        return credential != null ? credential.newDatabase(PlayerData.class) : getDefaultStorage();
+    }
+
+    private Repository<UUID, PlayerData> getDefaultStorage() {
+        return new JsonRepository<>(new File(getDataFolder(), "data/player"), PlayerData.class);
     }
 
     private void startPlayerDataSaveTask() {
-        playerDataSaveTask = new PlayerDataSaveTask(playerDataRepository);
-        if (mainConfig.isDataAutoSaveEnabled()) {
-            int interval = mainConfig.getDataAutoSaveInterval() * 60 * 20;
-            playerDataSaveTask.runTaskTimer(this, interval, interval);
-        }
+        playerDataSaveTask = new PlayerDataSaveTask(this);
+        playerDataSaveTask.start(mainConfig);
     }
 
     private void loadLanguages() {
-        LanguageLoader languageLoader = new LanguageLoader(this);
-        List<Language> languages = languageLoader.load(mainConfig.getEnabledLanguages());
+        loadLanguageAccessor();
+        ListenerRegistry.register(new LanguageListener<>(this, getPlayerDataCache()));
+    }
+
+    private void loadLanguageAccessor() {
+        List<Language> languages = getLanguages();
         Language defaultLanguage = getDefaultLanguage(languages);
-        languageAccessor = new LanguageAccessor(languages, defaultLanguage, playerDataRepository.get(TargetRepository.ONE));
-        ListenerRegistry.add(new LanguageListener(this));
+        Repository<UUID, PlayerData> cache = playerDataRepository.get(TargetRepository.ONE);
+        languageAccessor = new LanguageAccessor(languages, defaultLanguage, cache);
+    }
+
+    private List<Language> getLanguages() {
+        LanguageLoader languageLoader = new LanguageLoader(this);
+        return languageLoader.load(mainConfig.getEnabledLanguages(), mainConfig.getDefaultLanguage(), "item-black-list-menu");
     }
 
     private Language getDefaultLanguage(List<Language> languages) {
         return languages.stream()
                 .filter(language -> language.getId().equalsIgnoreCase(mainConfig.getDefaultLanguage()))
                 .findFirst()
-                .orElse(null);
+                .orElseGet(() -> handleUnknownDefaultLanguage(languages));
+    }
+
+    private Language handleUnknownDefaultLanguage(List<Language> languages) {
+        getLogger().warning(String.format("Default language '%s' not found. Using first language.", mainConfig.getDefaultLanguage()));
+        getLogger().warning("The plugin cannot generate new message files for unsupported languages as the default language is not defined.");
+        return languages.get(0);
     }
 
     private void loadInventories() {
-        Config itemBlacklistConfig = loadItemBlacklistConfig();
-        InventoryLoader inventoryLoader = new InventoryLoader(languageAccessor);
-        itemBlacklistInventory = inventoryLoader.load(itemBlacklistConfig);
-
-        itemBlacklistInventory.setOnUpdate((player, inventory) -> {
-            PlayerData playerData = playerDataRepository.get(player.getUniqueId(), TargetRepository.ONE);
-
-            List<ClickableItem> clickableItems = new ArrayList<>();
-            for (Item item : playerData.getBlackListedItems()) {
-                ItemStack base = item.toItemStack();
-                ItemStack itemStack = new ItemStackBuilder(base).addToLore("", "&cClick to remove!").build();
-
-                String name = itemStack.getItemMeta().getDisplayName();
-                List<String> lore = itemStack.getItemMeta().getLore();
-
-                ClickableItem clickableItem = SingleLanguageClickableItem.builder(itemStack).setBlocked(true).setName(name).setLore(lore)
-                        .setOnClick(List.of((event, bi) -> playerData.removeBlackListedItem(item))).build();
-                clickableItems.add(clickableItem);
-            }
-
-            inventory.getContent().getPagination().setItems(clickableItems);
-        });
-
-        ListenerRegistry.add(new Test(this));
-        ListenerRegistry.add(new InventoryListener(this));
-        new InventoryUpdateTask().runTaskTimer(this, 0L, 0L);
+        FileConfig itemBlacklistConfig = loadItemBlacklistConfig();
+        itemBlacklistInventory = loadItemBlackListInventory(itemBlacklistConfig);
+        inventoryLogic = new InventoryLogic(this);
+        inventoryLogic.enable();
+        ListenerRegistry.register(new InventoryListener(this));
     }
 
-    private Config loadItemBlacklistConfig() {
-        Config config = new Config(this, "menu/item-blacklist.yml", "menu/item-blacklist.yml");
+    private FileConfig loadItemBlacklistConfig() {
+        FileConfig config = new FileConfig(new File(getDataFolder(), "menu/item-blacklist.yml"), getResource("menu/item-blacklist.yml"));
         config.load();
         config.save();
         return config;
     }
 
-    private void loadListeners() {
-        ListenerRegistry.add(new StandardPickupListener(this));
-        ListenerRegistry.registerAll();
+    private BaseInventory loadItemBlackListInventory(FileConfig config) {
+        InventoryLoader loader = new InventoryLoader(getLogger(), languageAccessor);
+        BaseInventory inventory = loader.load(config);
+        inventory.setOnUpdate(new ItemBlacklistUpdate(this));
+        return inventory;
     }
 
     private void loadCommands() {
-        CleanInventoryCommand command = new CleanInventoryCommand(this);
-        CommandRegistry.register(command);
+        CleanInventoryCommand cleanInventoryCommand = new CleanInventoryCommand(this);
+        CommandRegistry.register(cleanInventoryCommand);
+    }
+
+    private void registerPickupListener() {
+        if (version.isAtLeast(SpigotVersion.V1_13)) {
+            ListenerRegistry.register(new PickupListener(this));
+        } else {
+            ListenerRegistry.register(new LegacyPickupListener(this));
+        }
     }
 
     private void loadMetrics() {
         new Metrics(this, 24770);
-    }
-
-    private void checkForUpdates() {
-        getLogger().info("Checking for plugin updates...");
-        if (pluginUpdater.isUpdateAvailable(this, 122572)) {
-            handlePluginUpdate();
-        } else {
-            getLogger().info("Your plugin is up to date. No new updates are available");
-        }
-    }
-
-    private void handlePluginUpdate() {
-        if (mainConfig.isAutoUpdateEnabled()) {
-            performPluginUpdate();
-        } else {
-            notifyUserAboutManualUpdate();
-        }
-    }
-
-    private void performPluginUpdate() {
-        getLogger().info("Automatic updates are enabled. Downloading the latest version...");
-        pluginUpdater.update(this, 122572);
-    }
-
-    private void notifyUserAboutManualUpdate() {
-        getLogger().info("Automatic updates are disabled. Visit the following link to download the update:");
-        getLogger().info("https://www.spigotmc.org/resources/122572");
-    }
-
-    private void savePlayerData() {
-        Bukkit.getOnlinePlayers().forEach(player -> playerDataRepository.saveFromCacheToDatabase(player.getUniqueId()));
     }
 }

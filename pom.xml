@@ -6,7 +6,7 @@
 
     <groupId>com.nickax</groupId>
     <artifactId>CleanInventory</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
     <packaging>jar</packaging>
 
     <name>cleaninventory</name>
@@ -37,6 +37,10 @@
                         <relocation>
                             <pattern>org.bstats</pattern>
                             <shadedPattern>com.nickax.cleaninventory.bstats</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.nickax.genten</pattern>
+                            <shadedPattern>com.nickax.cleaninventory.genten</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>
@@ -80,11 +84,6 @@
             <groupId>com.nickax</groupId>
             <artifactId>genten</artifactId>
             <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>fr.minuskube.inv</groupId>
-            <artifactId>smart-invs</artifactId>
-            <version>1.2.7</version>
         </dependency>
         <dependency>
             <groupId>org.bstats</groupId>

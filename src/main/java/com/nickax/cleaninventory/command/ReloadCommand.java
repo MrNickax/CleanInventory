@@ -12,7 +12,7 @@ public class ReloadCommand extends BaseCommand {
     private final CleanInventory plugin;
 
     public ReloadCommand(CleanInventory plugin, BaseCommand parent) {
-        super("reload", createProperties(parent), parent.getMessages());
+        super("reload", createProperties(parent));
         this.plugin = plugin;
     }
 

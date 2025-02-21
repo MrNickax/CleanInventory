@@ -1,3 +1,5 @@
+# CleanInventory ${project.version} Spanish messages
+
 reload: '&a¡Configuración recargada con éxito!'
 no-permission: '&c¡No tienes los permisos suficientes!'
 unknown-player: '&c¡Error! ¡Jugador no reconocido!'
@@ -15,3 +17,13 @@ help-format:
   - '{help}'
   - ''
   - '&eMostrando página &6{current_page} &ede &6{total_pages}'
+
+# From here all messages can be renamed or removed to fit your needs:
+item-black-list-menu:
+  title: '&8Lista negra de objetos'
+  default-item-name: '&cRanura Vacia'
+  default-item-lore:
+    - '&7Haz click en un item para añadirlo!'
+  previous-page-item-name: '&aPágina Anterior'
+  close-item-name: '&cCerar'
+  next-page-item-name: '&aSiguiente Página'

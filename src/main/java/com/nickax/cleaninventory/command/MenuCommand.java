@@ -3,6 +3,7 @@ package com.nickax.cleaninventory.command;
 import com.nickax.cleaninventory.CleanInventory;
 import com.nickax.genten.command.BaseCommand;
 import com.nickax.genten.command.CommandProperties;
+import com.nickax.genten.command.enums.CommandScope;
 import com.nickax.genten.inventory.BaseInventory;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -20,7 +21,8 @@ public class MenuCommand extends BaseCommand {
 
     @Override
     public boolean onExecute(CommandSender sender, String name, String[] args) {
-        itemBlacklistInventory.open((Player) sender);
+        Player player = (Player) sender;
+        itemBlacklistInventory.open(player);
         return true;
     }
 
@@ -32,6 +34,7 @@ public class MenuCommand extends BaseCommand {
     private static CommandProperties createProperties(BaseCommand parent) {
         return CommandProperties.builder()
                 .setParent(parent)
+                .setScope(CommandScope.PLAYER)
                 .setDescription("open the item blacklist menu")
                 .setPermission("cleaninventory.menu")
                 .build();

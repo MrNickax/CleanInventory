@@ -1,11 +1,7 @@
-titles:
-  en_US:
-    id: en_US
-    title: '&8Item Blacklist'
-  es_ES:
-    id: es_ES
-    title: '&8Lista negra de objetos'
+title: item-black-list-menu.title
 size: 36
+
+multi-language: true
 
 pagination:
   slots:
@@ -25,22 +21,9 @@ pagination:
     - 25
   default-item:
     material: RED_STAINED_GLASS_PANE
-    names:
-      en_US:
-        id: en_US
-        name: '&cEmpty Slot'
-      es_ES:
-        id: es_ES
-        name: '&cRanura Vacia'
-    lores:
-      en_US:
-        id: en_US
-        lore:
-          - '&7Click on an item to add it'
-      es_ES:
-        id: es_ES
-        lore:
-          - '&7Haz click en un item para añadirlo'
+    properties:
+      name: item-black-list-menu.default-item-name
+      lore: item-black-list-menu.default-item-lore
 
 content:
   decoration:
@@ -67,68 +50,42 @@ content:
       - 33
       - 34
       - 35
-    name: '&7'
-  information:
-    material: OAK_SIGN
-    slot: 28
-    names:
-      en_US:
-        id: en_US
-        name: '&aInformation'
-      es_ES:
-        id: es_ES
-        name: '&aInformación'
-    lores:
-      en_US:
-        id: en_US
-        lore:
-          - '&7'
-          - '&7In this menu, you can manage'
-          - '&7the items that are blocked'
-          - '&7from being picked up.'
-      es_ES:
-        id: es_ES
-        lore:
-          - '&7'
-          - '&7En este menú, puedes gestionar'
-          - '&7los objetos que están bloqueados'
-          - '&7de ser recogidos.'
+    properties:
+      multi-language: false
+      name: '&7'
   previous-page:
     material: ARROW
     slot: 30
-    names:
-      en_US:
-        id: en_US
-        name: '&aPrevious Page'
-      es_ES:
-        id: es_ES
-        name: '&aPágina Anterior'
+    view-conditions:
+      condition:
+        type: HAS_PREVIOUS_PAGE
+    properties:
+      name: item-black-list-menu.previous-page-item-name
     actions:
-      close:
-        type: PREVIOUS_PAGE
+      previous-page:
+        trigger: CLICK
+        tasks:
+          - '[previous-page]'
   close:
     material: BARRIER
     slot: 31
-    names:
-      en_US:
-        id: en_US
-        name: '&cClose'
-      es_ES:
-        id: es_ES
-        name: '&cCerrar'
+    properties:
+      name: item-black-list-menu.close-item-name
     actions:
       close:
-        type: CLOSE
+        trigger: CLICK
+        tasks:
+          - '[close]'
   next-page:
     material: ARROW
     slot: 32
-    names:
-      en_US:
-        id: en_US
-        name: '&aNext Page'
-      es_ES:
-        id: es_ES
-        name: '&aSiguiente Página'
+    view-conditions:
+      condition:
+        type: HAS_NEXT_PAGE
+    properties:
+      name: item-black-list-menu.next-page-item-name
     actions:
-      close:
-        type: NEXT_PAGE
+      next-page:
+        trigger: CLICK
+        tasks:
+          - '[next-page]'

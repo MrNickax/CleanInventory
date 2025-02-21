@@ -2,25 +2,27 @@ package com.nickax.cleaninventory.listener;
 
 import com.nickax.cleaninventory.CleanInventory;
 import com.nickax.cleaninventory.data.PlayerData;
-import com.nickax.cleaninventory.item.Item;
-import com.nickax.cleaninventory.repository.PlayerDataRepository;
 import com.nickax.genten.inventory.BaseInventory;
 import com.nickax.genten.inventory.InventoryRegistry;
+import com.nickax.genten.item.Item;
 import com.nickax.genten.listener.SwitchableListener;
-import com.nickax.genten.repository.dual.TargetRepository;
+import com.nickax.genten.repository.Repository;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-public class Test extends SwitchableListener {
+import java.util.UUID;
 
-    private final PlayerDataRepository playerDataRepository;
+public class InventoryListener extends SwitchableListener {
+
+    private final Repository<UUID, PlayerData> cache;
     
-    public Test(CleanInventory plugin) {
+    public InventoryListener(CleanInventory plugin) {
         super(plugin);
-        this.playerDataRepository = plugin.getPlayerDataRepository();
+        this.cache = plugin.getPlayerDataCache();
     }
 
     @EventHandler
@@ -32,8 +34,8 @@ public class Test extends SwitchableListener {
             if (clicked != null && clicked.equals(player.getInventory())) {
                 ItemStack itemStack = event.getCurrentItem();
                 if (itemStack != null) {
-                    Item item = new Item(itemStack);
-                    PlayerData playerData = playerDataRepository.get(player.getUniqueId(), TargetRepository.ONE);
+                    Item item = Item.fromItemStack(itemStack);
+                    PlayerData playerData = cache.get(player.getUniqueId());
                     playerData.addBlackListedItem(item);
                     event.setCancelled(true);
                 }

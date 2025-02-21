@@ -2,43 +2,42 @@ package com.nickax.cleaninventory.config;
 
 import com.google.common.reflect.TypeToken;
 import com.nickax.cleaninventory.credential.DatabaseCredentialLoader;
-import com.nickax.genten.config.Config;
+import com.nickax.genten.config.ConfigSection;
+import com.nickax.genten.config.FileConfig;
 import com.nickax.genten.credential.DatabaseCredential;
-import com.nickax.genten.repository.database.DatabaseCredentialProvider;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.util.List;
 
-public class MainConfig extends Config implements DatabaseCredentialProvider {
+public class MainConfig extends FileConfig {
 
     public MainConfig(JavaPlugin plugin) {
-        super(plugin, "config.yml", "config.yml");
+        super(new File(plugin.getDataFolder(), "config.yml"), plugin.getResource("config.yml"));
     }
 
     public boolean isAutoUpdateEnabled() {
-        return getValue("auto-update").asType(Boolean.class);
+        return castValue("auto-update", Boolean.class);
     }
 
     public String getDefaultLanguage() {
-        return getValue("language.default").asType(String.class);
+        return castValue("language.default", String.class);
     }
 
     public List<String> getEnabledLanguages() {
-        return getValue("language.enabled").asType(new TypeToken<List<String>>() {}.getType());
+        return castValue("language.enabled", new TypeToken<>() {});
     }
 
-    @Override
     public DatabaseCredential getDatabaseCredential() {
-        ConfigurationSection section = getValue("storage").asType(ConfigurationSection.class);
+        ConfigSection section = castValue("storage", ConfigSection.class);
         return DatabaseCredentialLoader.load(section);
     }
 
     public boolean isDataAutoSaveEnabled() {
-        return getValue("storage.auto-save.enabled").asType(Boolean.class);
+        return castValue("storage.auto-save.enabled", Boolean.class);
     }
 
     public int getDataAutoSaveInterval() {
-        return getValue("storage.auto-save.interval").asType(Integer.class);
+        return castValue("storage.auto-save.interval", Integer.class);
     }
 }

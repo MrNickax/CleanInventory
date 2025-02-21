@@ -1,3 +1,5 @@
+# CleanInventory ${project.version} English messages
+
 reload: '&aConfiguration successfully reloaded!'
 no-permission: '&cYou don''t have sufficient permissions!'
 unknown-command: '&cError! Command not recognized!'
@@ -15,3 +17,13 @@ help-format:
   - '{help}'
   - ''
   - '&eShowing page &6{current_page} &eof &6{total_pages}'
+
+# From here all messages can be renamed or removed to fit your needs:
+item-black-list-menu:
+  title: '&8Item Blacklist'
+  default-item-name: '&cEmpty Slot'
+  default-item-lore:
+    - '&7Click on an item to add it!'
+  previous-page-item-name: '&aPrevious Page'
+  close-item-name: '&cClose'
+  next-page-item-name: '&aNext Page'

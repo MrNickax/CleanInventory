@@ -1,8 +1,7 @@
 package com.nickax.cleaninventory.listener;
 
 import com.nickax.cleaninventory.CleanInventory;
-import com.nickax.cleaninventory.data.PlayerData;
-import com.nickax.cleaninventory.repository.PlayerDataRepository;
+import com.nickax.cleaninventory.data.PlayerDataRepository;
 import com.nickax.genten.listener.SwitchableListener;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,12 +20,12 @@ public class PlayerDataListener extends SwitchableListener {
     @EventHandler
     private void onPlayerLogin(PlayerLoginEvent event) {
         Player player = event.getPlayer();
-        playerDataRepository.loadFromDatabaseToCache(player.getUniqueId(), new PlayerData(player));
+        playerDataRepository.loadFromStorageToCache(player);
     }
 
     @EventHandler
     private void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        playerDataRepository.saveFromCacheToDatabase(player.getUniqueId());
+        playerDataRepository.saveFromCacheToStorage(player);
     }
 }
