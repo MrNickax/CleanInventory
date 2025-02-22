@@ -6,7 +6,7 @@
 
     <groupId>com.nickax</groupId>
     <artifactId>CleanInventory</artifactId>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
     <packaging>jar</packaging>
 
     <name>cleaninventory</name>
@@ -83,7 +83,7 @@
         <dependency>
             <groupId>com.nickax</groupId>
             <artifactId>genten</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.bstats</groupId>

@@ -2,9 +2,9 @@ package com.nickax.cleaninventory.command;
 
 import com.nickax.cleaninventory.CleanInventory;
 import com.nickax.genten.command.BaseCommand;
-import com.nickax.genten.command.CommandHelp;
-import com.nickax.genten.command.CommandProperties;
 import com.nickax.genten.command.messages.CommandMessages;
+import com.nickax.genten.command.model.CommandHelp;
+import com.nickax.genten.command.model.CommandProperties;
 import com.nickax.genten.language.command.LanguageCommand;
 import com.nickax.genten.language.operation.LanguageAccessor;
 import com.nickax.genten.text.LocalizedText;
@@ -18,7 +18,7 @@ public class CleanInventoryCommand extends BaseCommand {
         super("cleaninventory", createProperties(), createMessages(plugin.getLanguageAccessor()));
         addSubCommand(new ReloadCommand(plugin, this));
         addSubCommand(new MenuCommand(plugin, this));
-        addSubCommand(new LanguageCommand<>(this, plugin.getLanguageAccessor(), plugin.getPlayerDataCache()));
+        addSubCommand(new LanguageCommand<>(this, plugin.getLanguageAccessor(), plugin.getPlayerDataCache(), "cleaninventory.language"));
     }
 
     @Override

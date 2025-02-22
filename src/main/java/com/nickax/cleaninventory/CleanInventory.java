@@ -11,6 +11,7 @@ import com.nickax.cleaninventory.listener.InventoryListener;
 import com.nickax.cleaninventory.listener.pickup.LegacyPickupListener;
 import com.nickax.cleaninventory.listener.pickup.PickupListener;
 import com.nickax.genten.command.CommandRegistry;
+import com.nickax.genten.command.model.CommandProperties;
 import com.nickax.genten.config.FileConfig;
 import com.nickax.genten.credential.DatabaseCredential;
 import com.nickax.genten.inventory.BaseInventory;
@@ -56,6 +57,7 @@ public final class CleanInventory extends JavaPlugin {
     public void onEnable() {
         SpigotVersion.checkCompatibility(getLogger());
         initializePlugin();
+        loadCommands();
         PluginUpdater.checkForUpdates(this, 122572, mainConfig.isAutoUpdateEnabled());
         loadMetrics();
     }
@@ -92,14 +94,12 @@ public final class CleanInventory extends JavaPlugin {
         loadLanguages();
         loadInventories();
         registerPickupListener();
-        loadCommands();
     }
 
     private void shutdownPlugin() {
         playerDataSaveTask.cancel();
         playerDataRepository.saveFromCacheToStorage();
         inventoryLogic.disable();
-        CommandRegistry.unregisterAll();
         ListenerRegistry.unregisterAll();
     }
 
@@ -188,8 +188,9 @@ public final class CleanInventory extends JavaPlugin {
     }
 
     private void loadCommands() {
+        CommandRegistry commandRegistry = new CommandRegistry();
         CleanInventoryCommand cleanInventoryCommand = new CleanInventoryCommand(this);
-        CommandRegistry.register(cleanInventoryCommand);
+        commandRegistry.register(cleanInventoryCommand);
     }
 
     private void registerPickupListener() {

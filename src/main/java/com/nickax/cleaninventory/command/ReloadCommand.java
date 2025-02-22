@@ -2,7 +2,7 @@ package com.nickax.cleaninventory.command;
 
 import com.nickax.cleaninventory.CleanInventory;
 import com.nickax.genten.command.BaseCommand;
-import com.nickax.genten.command.CommandProperties;
+import com.nickax.genten.command.model.CommandProperties;
 import org.bukkit.command.CommandSender;
 
 import java.util.List;

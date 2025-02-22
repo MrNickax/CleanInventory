@@ -1,10 +1,10 @@
 package com.nickax.cleaninventory.config;
 
 import com.google.common.reflect.TypeToken;
-import com.nickax.cleaninventory.credential.DatabaseCredentialLoader;
 import com.nickax.genten.config.ConfigSection;
 import com.nickax.genten.config.FileConfig;
 import com.nickax.genten.credential.DatabaseCredential;
+import com.nickax.genten.credential.loader.DatabaseCredentialLoader;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -12,8 +12,11 @@ import java.util.List;
 
 public class MainConfig extends FileConfig {
 
+    private final DatabaseCredentialLoader databaseCredentialLoader;
+
     public MainConfig(JavaPlugin plugin) {
         super(new File(plugin.getDataFolder(), "config.yml"), plugin.getResource("config.yml"));
+        this.databaseCredentialLoader = new DatabaseCredentialLoader("cleaninventory");
     }
 
     public boolean isAutoUpdateEnabled() {
@@ -30,7 +33,7 @@ public class MainConfig extends FileConfig {
 
     public DatabaseCredential getDatabaseCredential() {
         ConfigSection section = castValue("storage", ConfigSection.class);
-        return DatabaseCredentialLoader.load(section);
+        return databaseCredentialLoader.load(section);
     }
 
     public boolean isDataAutoSaveEnabled() {
